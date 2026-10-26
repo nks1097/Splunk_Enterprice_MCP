@@ -68,7 +68,7 @@ class SplunkClient:
     def _build_url(self, endpoint: str) -> str:
         """Build request URL taking into account direct 8089 vs Web proxy on 8000."""
         endpoint_clean = endpoint.lstrip("/")
-        if not endpoint_clean.startswith("services/"):
+        if not (endpoint_clean.startswith("services/") or endpoint_clean.startswith("servicesNS/")):
             endpoint_clean = f"services/{endpoint_clean}"
 
         if self.settings.is_splunk_web_port:
@@ -254,8 +254,12 @@ class SplunkClient:
         max_count: int | None = None,
     ) -> str:
         """Dispatch a search query and return Job SID."""
+        clean_spl = spl.strip()
+        if not (clean_spl.startswith("|") or clean_spl.lower().startswith("search ") or clean_spl.lower() == "search"):
+            clean_spl = f"search {clean_spl}"
+
         data: dict[str, Any] = {
-            "search": spl,
+            "search": clean_spl,
             "exec_mode": exec_mode,
             "output_mode": "json",
         }
@@ -269,7 +273,7 @@ class SplunkClient:
         res = await self.post("search/jobs", data=data)
         if isinstance(res, dict) and "sid" in res:
             return res["sid"]
-        raise SplunkMCPError("Failed to obtain search job SID from response.")
+        raise SplunkMCPError(f"Failed to obtain search job SID from response: {res}")
 
     async def get_job_status(self, sid: str) -> SearchJobInfo:
         """Fetch search job status and progress by SID."""

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_PROJECT_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
     """Splunk MCP Server Configuration loaded from environment or .env file."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_PROJECT_ENV) if _PROJECT_ENV.exists() else ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )

@@ -30,10 +30,12 @@ async def splunk_list_dashboards(
 
     try:
         params: dict[str, Any] = {"count": count, "offset": offset}
-        if app:
-            params["app"] = app
-
-        res = await client.get("data/ui/views", params=params)
+        user = settings.splunk_username or "admin"
+        app_name = app or "-"
+        endpoint = f"servicesNS/{user}/{app_name}/data/ui/views"
+        res = await client.get(endpoint, params=params)
+        if not isinstance(res, dict) or "entry" not in res:
+            res = await client.get("data/ui/views", params=params)
         dashboards = []
         if isinstance(res, dict) and "entry" in res:
             for item in res["entry"]:
@@ -80,13 +82,18 @@ async def splunk_get_dashboard(
     client = get_splunk_client()
 
     try:
-        endpoint = f"data/ui/views/{name}"
-        params = {"app": app} if app else None
-        res = await client.get(endpoint, params=params)
+        user = settings.splunk_username or "admin"
+        app_name = app or "search"
+        endpoint = f"servicesNS/{user}/{app_name}/data/ui/views/{name}"
+        res = await client.get(endpoint)
         if not isinstance(res, dict) or "entry" not in res or not res["entry"]:
-            return ToolResult.fail(
-                f"Dashboard '{name}' not found.", start_time=start_time, read_only=settings.mcp_read_only
-            )
+            # Fallback to general endpoint
+            endpoint_fallback = f"data/ui/views/{name}"
+            res = await client.get(endpoint_fallback, params={"app": app} if app else None)
+            if not isinstance(res, dict) or "entry" not in res or not res["entry"]:
+                return ToolResult.fail(
+                    f"Dashboard '{name}' not found.", start_time=start_time, read_only=settings.mcp_read_only
+                )
 
         item = res["entry"][0]
         content = extract_entry_content(item)
@@ -124,13 +131,21 @@ async def splunk_create_dashboard(
         check_write_permission(tool_name)
         data = {
             "name": name,
-            "label": label,
             "eai:data": xml_data,
         }
-        await client.post("data/ui/views", data=data, params={"app": app})
+        user = settings.splunk_username or "admin"
+        app_name = app or "search"
+        endpoint = f"servicesNS/{user}/{app_name}/data/ui/views"
+        res = await client.post(endpoint, data=data)
+        if isinstance(res, dict) and "messages" in res:
+            for msg in res["messages"]:
+                if msg.get("type") in ("ERROR", "FATAL"):
+                    return ToolResult.fail(
+                        f"Splunk error: {msg.get('text')}", start_time=start_time, read_only=settings.mcp_read_only
+                    )
         server_info = await client.get_server_info()
         return ToolResult.ok(
-            data={"name": name, "created": True, "app": app},
+            data={"name": name, "created": True, "app": app_name},
             start_time=start_time,
             server_version=server_info.version,
             read_only=settings.mcp_read_only,
@@ -164,8 +179,10 @@ async def splunk_update_dashboard(
         if label:
             data["label"] = label
 
-        params = {"app": app} if app else None
-        await client.post(f"data/ui/views/{name}", data=data, params=params)
+        user = settings.splunk_username or "admin"
+        app_name = app or "search"
+        endpoint = f"servicesNS/{user}/{app_name}/data/ui/views/{name}"
+        await client.post(endpoint, data=data)
         server_info = await client.get_server_info()
         return ToolResult.ok(
             data={"name": name, "updated": True},
@@ -198,8 +215,10 @@ async def splunk_delete_dashboard(
         check_write_permission(tool_name)
         check_human_confirmation(tool_name, resource_id=name, action="delete_dashboard", confirm=confirm)
 
-        params = {"app": app} if app else None
-        await client.delete(f"data/ui/views/{name}", params=params)
+        user = settings.splunk_username or "admin"
+        app_name = app or "search"
+        endpoint = f"servicesNS/{user}/{app_name}/data/ui/views/{name}"
+        await client.delete(endpoint)
         server_info = await client.get_server_info()
         return ToolResult.ok(
             data={"name": name, "deleted": True, "message": f"Dashboard '{name}' was deleted."},
@@ -273,7 +292,7 @@ async def splunk_run_report(
 
     try:
         # Dispatch report
-        res = await client.post(f"saved/searches/{name}/dispatch", data={"output_mode": "json"})
+        res = await client.post(f"saved/searches/{name}/dispatch", data={})
         sid = res.get("sid") if isinstance(res, dict) else str(res).strip()
 
         # Wait briefly for execution or fetch results
@@ -365,7 +384,7 @@ async def splunk_list_macros(count: int = 100) -> ToolResult[dict[str, Any]]:
     client = get_splunk_client()
 
     try:
-        res = await client.get("admin/macros", params={"count": count})
+        res = await client.get("data/macros", params={"count": count})
         macros = []
         if isinstance(res, dict) and "entry" in res:
             for item in res["entry"]:

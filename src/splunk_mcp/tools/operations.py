@@ -79,7 +79,7 @@ async def splunk_update_index_settings(
         if disabled is not None:
             data["disabled"] = 1 if disabled else 0
 
-        await client.post(f"data/indexes/{name}", data=data)
+        await client.post(f"servicesNS/nobody/system/data/indexes/{name}", data=data)
         server_info = await client.get_server_info()
         return ToolResult.ok(
             data={"index": name, "updated": True, "changes": list(data.keys())},
@@ -109,13 +109,19 @@ async def splunk_manage_input(
     client = get_splunk_client()
 
     try:
+        import urllib.parse
         check_write_permission(tool_name)
-        endpoint_action = f"data/inputs/{input_type}/{name}/{action.lower()}"
-        await client.post(endpoint_action)
+        encoded_name = urllib.parse.quote(name, safe="").replace("%2F", "%252F")
+        endpoint = f"servicesNS/nobody/system/data/inputs/{input_type}/{encoded_name}"
+        disabled_val = 1 if action.lower() == "disable" else 0
+        try:
+            await client.post(endpoint, data={"disabled": disabled_val})
+        except Exception:
+            await client.post(f"data/inputs/{input_type}/{name}", data={"disabled": disabled_val})
 
         server_info = await client.get_server_info()
         return ToolResult.ok(
-            data={"input_type": input_type, "name": name, "action": action, "success": True},
+            data={"input_type": input_type, "name": name, "action": action, "disabled": bool(disabled_val), "success": True},
             start_time=start_time,
             server_version=server_info.version,
             read_only=settings.mcp_read_only,

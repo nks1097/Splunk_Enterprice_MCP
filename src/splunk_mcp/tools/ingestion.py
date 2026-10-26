@@ -23,7 +23,7 @@ async def splunk_list_inputs(count: int = 100) -> ToolResult[dict[str, Any]]:
     client = get_splunk_client()
 
     try:
-        res = await client.get("data/inputs/all", params={"count": count})
+        res = await client.get("data/inputs/monitor", params={"count": count})
         inputs = []
         if isinstance(res, dict) and "entry" in res:
             for item in res["entry"]:
@@ -65,11 +65,15 @@ async def splunk_get_input(
     client = get_splunk_client()
 
     try:
-        res = await client.get(f"data/inputs/{input_type}/{name}")
+        import urllib.parse
+        encoded_name = urllib.parse.quote(name, safe="").replace("%2F", "%252F")
+        res = await client.get(f"servicesNS/nobody/system/data/inputs/{input_type}/{encoded_name}")
         if not isinstance(res, dict) or "entry" not in res or not res["entry"]:
-            return ToolResult.fail(
-                f"Input '{input_type}/{name}' not found.", start_time=start_time, read_only=settings.mcp_read_only
-            )
+            res = await client.get(f"data/inputs/{input_type}/{name}")
+            if not isinstance(res, dict) or "entry" not in res or not res["entry"]:
+                return ToolResult.fail(
+                    f"Input '{input_type}/{name}' not found.", start_time=start_time, read_only=settings.mcp_read_only
+                )
 
         content = extract_entry_content(res["entry"][0])
         server_info = await client.get_server_info()
