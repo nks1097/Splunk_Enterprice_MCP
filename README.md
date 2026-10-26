@@ -91,8 +91,8 @@ graph TD
 ### 1. Installation
 
 ```bash
-git clone https://github.com/your-org/splunk-enterprise-mcp.git
-cd splunk-enterprise-mcp
+git clone https://github.com/nks1097/Splunk_Enterprice_MCP.git
+cd Splunk_Enterprice_MCP
 
 python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
