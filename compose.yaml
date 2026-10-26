@@ -1,0 +1,24 @@
+services:
+  splunk-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: splunk-enterprise-mcp:1.0.0
+    container_name: splunk-enterprise-mcp
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8001:8001"
+    command: ["--transport", "sse", "--host", "0.0.0.0", "--port", "8001"]
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/sse', timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
