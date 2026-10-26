@@ -1,6 +1,8 @@
 # Environment and secrets
 .env
 *.env.local
+logs/
+*.log
 
 # Python artifacts
 __pycache__/
