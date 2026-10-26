@@ -8,6 +8,33 @@ Este documento orienta a implantação do Servidor MCP para Splunk Enterprise em
 
 O transporte Standard Input/Output (`stdio`) é a forma recomendada para conectar assistentes de IA instalados na máquina do desenvolvedor ou analista de SOC.
 
+### Preparação do Ambiente Virtual Python
+
+**No Windows (PowerShell):**
+
+> [!TIP]
+> Caso o PowerShell bloqueie a execução de scripts (`running scripts is disabled on this system`), libere a permissão para o seu usuário antes de ativar o ambiente:
+
+```powershell
+# 1. Liberar execução de scripts para o usuário atual
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# (Pressione 'S' ou 'A' para confirmar)
+
+# 2. Criar e ativar o ambiente virtual
+python -m venv .venv
+.\.venv\Scripts\activate
+
+# 3. Instalar dependências em modo de desenvolvimento
+pip install -e ".[dev]"
+```
+
+**No Linux / macOS:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
 ### Arquivo de Configuração do Cliente MCP
 
 Dependendo da sua ferramenta, adicione o bloco JSON no arquivo correspondente:

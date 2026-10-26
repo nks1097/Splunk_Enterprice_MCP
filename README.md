@@ -255,9 +255,25 @@ cd Splunk_Enterprice_MCP
 ### 2. Criar e Ativar o Ambiente Virtual
 
 **No Windows (PowerShell):**
+
+> [!TIP]
+> Caso o PowerShell bloqueie a execução de scripts (`running scripts is disabled on this system`), libere a permissão para o usuário atual antes de ativar o ambiente:
+
+1. No terminal do PowerShell, libere a execução de scripts para o seu usuário:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+*(Pressione `S` ou `A` para confirmar caso solicitado).*
+
+2. Crie e ative o ambiente virtual normalmente:
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\activate
+```
+*(O prefixo `(.venv)` aparecerá no início da linha do terminal).*
+
+3. Instale o pacote em modo de desenvolvimento com as dependências:
+```powershell
 pip install -e ".[dev]"
 ```
 
