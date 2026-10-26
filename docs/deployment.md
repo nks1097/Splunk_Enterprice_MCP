@@ -1,13 +1,19 @@
-# Splunk Enterprise MCP Deployment Guide
+# Guia de Implantação e Produção do Splunk MCP
 
-This guide covers deploying the Splunk Enterprise MCP Server across local developer environments, AI IDE agents, and enterprise production infrastructure.
+Este documento orienta a implantação do Servidor MCP para Splunk Enterprise em diferentes cenários corporativos, desde o desenvolvimento local com IDEs de IA até clusters containerizados em produção.
 
 ---
 
-## 1. Local IDE Integration (STDIO Transport)
+## 1. Integração com IDEs Locais (Transporte STDIO)
 
-### Claude Desktop / Antigravity IDE Configuration
-Add the server entry to your MCP configuration file (`claude_desktop_config.json` or `mcp_config.json`):
+O transporte Standard Input/Output (`stdio`) é a forma recomendada para conectar assistentes de IA instalados na máquina do desenvolvedor ou analista de SOC.
+
+### Arquivo de Configuração do Cliente MCP
+
+Dependendo da sua ferramenta, adicione o bloco JSON no arquivo correspondente:
+- **Claude Desktop:** `%APPDATA%\Claude\claude_desktop_config.json` (Windows) ou `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS/Linux)
+- **Antigravity IDE:** `~/.gemini/config/mcp_config.json`
+- **Cursor:** `.cursor/mcp.json` na raiz do seu projeto
 
 ```json
 {
@@ -15,16 +21,15 @@ Add the server entry to your MCP configuration file (`claude_desktop_config.json
     "splunk": {
       "command": "python",
       "args": ["-m", "splunk_mcp.server", "--transport", "stdio"],
-      "cwd": "C:/Users/Natanael Krindges/.gemini/antigravity/mcp/Splunk_Enterprice_MCP",
+      "cwd": "C:/caminho/para/Splunk_Enterprice_MCP",
       "env": {
         "SPLUNK_HOST": "192.168.0.107",
         "SPLUNK_PORT": "8000",
         "SPLUNK_SCHEME": "http",
         "SPLUNK_USERNAME": "admin",
-        "SPLUNK_PASSWORD": "your-password-here",
-        "SPLUNK_TOKEN": "your-splunk-bearer-token",
+        "SPLUNK_PASSWORD": "sua_senha_aqui",
         "SPLUNK_VERIFY_TLS": "false",
-        "MCP_READ_ONLY": "true"
+        "MCP_READ_ONLY": "false"
       }
     }
   }
@@ -33,22 +38,24 @@ Add the server entry to your MCP configuration file (`claude_desktop_config.json
 
 ---
 
-## 2. Docker & Container Deployment
+## 2. Implantação Containerizada (Docker & Docker Compose)
 
-### Build the Image
+Para disponibilizar o servidor MCP como um serviço de rede centralizado acessível por múltiplos agentes ou sistemas de orquestração (via protocolo SSE ou Streamable HTTP):
+
+### Construção da Imagem Docker
 ```bash
 docker build -t splunk-enterprise-mcp:latest .
 ```
 
-### Run with Docker Compose
+### Inicialização com Docker Compose
 ```bash
 docker compose up -d
 ```
 
-### Standalone Docker Run
+### Execução Direta via Docker CLI
 ```bash
 docker run -d \
-  --name splunk-mcp \
+  --name splunk-mcp-server \
   --restart unless-stopped \
   -p 8001:8001 \
   --env-file .env \
@@ -56,25 +63,49 @@ docker run -d \
   --transport sse --host 0.0.0.0 --port 8001
 ```
 
----
-
-## 3. Remote HTTP / SSE Microservice Architecture
-
-In distributed environments, the server can be deployed as an independent SSE endpoint:
-- **Port**: `8001`
-- **Endpoints**:
-  - `GET /sse` — Establishes SSE stream connection
-  - `POST /messages` — Dispatches JSON-RPC tool invocation requests
-- **Healthcheck**:
-  ```bash
-  curl -I http://localhost:8001/sse
-  ```
+### Teste de Conectividade e Saúde do Container
+```bash
+curl -I http://localhost:8001/sse
+```
 
 ---
 
-## 4. Production Hardening Checklist
+## 3. Implantação como Serviço de Sistema no Linux (Systemd)
 
-1. **Service Accounts**: Create a dedicated least-privilege Splunk service account (`svc_mcp_agent`) with access only to designated indexes.
-2. **Read-Only Mode**: Ensure `MCP_READ_ONLY=true` in production monitoring and investigation environments.
-3. **TLS Validation**: Enable `SPLUNK_VERIFY_TLS=true` and mount internal corporate CA certificates with `SPLUNK_CA_BUNDLE`.
-4. **Rate Limits & Caps**: Set `SPLUNK_MAX_RESULTS` (default: 1000) and `SPLUNK_MAX_CONCURRENT_SEARCHES` (default: 5) to safeguard search head performance.
+Para manter o servidor MCP rodando continuamente em um servidor Linux dedicado:
+
+Crie o arquivo `/etc/systemd/system/splunk-mcp.service`:
+
+```ini
+[Unit]
+Description=Splunk Enterprise MCP Server
+After=network.target
+
+[Service]
+Type=simple
+User=splunkmcp
+WorkingDirectory=/opt/Splunk_Enterprice_MCP
+ExecStart=/opt/Splunk_Enterprice_MCP/.venv/bin/python -m splunk_mcp.server --transport sse --host 0.0.0.0 --port 8001
+EnvironmentFile=/opt/Splunk_Enterprice_MCP/.env
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Ative e inicie o serviço:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable splunk-mcp
+sudo systemctl start splunk-mcp
+sudo systemctl status splunk-mcp
+```
+
+---
+
+## 4. Recomendações de Segurança para Produção
+
+1. **Utilize Credenciais de Menor Privilégio**: Crie um usuário dedicado no Splunk (ex: `svc_mcp_agent`) associado a um perfil que tenha acesso restrito apenas aos índices e permissões necessárias.
+2. **Habilite TLS/HTTPS**: Em ambientes produtivos com tráfego externo, utilize certificados válidos assinados por autoridade certificadora e configure `SPLUNK_VERIFY_TLS=true`.
+3. **Mantenha o Modo Read-Only Ativo Inicialmente**: Recomenda-se iniciar com `MCP_READ_ONLY=true` e habilitar `MCP_READ_ONLY=false` apenas quando houver necessidade de criação de dashboards ou manipulação programática de alertas.
