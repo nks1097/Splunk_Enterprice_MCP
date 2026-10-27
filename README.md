@@ -316,12 +316,13 @@ SPLUNK_VERIFY_TLS=false
 MCP_READ_ONLY=false
 MCP_TRANSPORT=stdio
 ```
- * Exemplo das configuraçoes do arquivo .env
-![Configurar as Variáveis de Ambiente-1](imagens/1.png)
----
+* crie o arquivo .env
+    ![Criando o arquivo .env](imagens/1.png)
 
- * Exemplo 2 das configuraçoes do arquivo .env
-![Configuração do Wazuh Indexer opensearch.yml](/imagens/2.png)
+* Exemplo 2 das configurações do arquivo .env
+    ![Configurações do .env](/imagens/2.png)
+
+ 
 ---
 
 ## Configuração nos Clientes MCP
