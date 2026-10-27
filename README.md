@@ -423,7 +423,9 @@ pytest tests/unit -v
 # Executar os testes de integração ao vivo contra o Splunk
 pytest tests/integration/test_live_splunk.py -v -s
 ```
+### VIDEO DE CONFIGURAÇÃO DE FORMA SIMPLIFICADA USANDO ANTIGRAVITY IDE
 
+ ▶️ **[Clique aqui para assistir ao vídeo completo no Google Drive Assiste em Full Hd (1080P)](https://drive.google.com/file/d/15xeVFDRUMBGbFhvBwaNyeDItFB6uWDta/view?usp=drive_link)**
 ---
 
 ## Documentação Técnica Aprofundada
