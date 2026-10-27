@@ -316,7 +316,7 @@ SPLUNK_VERIFY_TLS=false
 MCP_READ_ONLY=false
 MCP_TRANSPORT=stdio
 ```
-* crie o arquivo .env
+* Exemplo 1 das configurações do arquivo .env
 
     ![Criando o arquivo .env](imagens/1.png)
 
