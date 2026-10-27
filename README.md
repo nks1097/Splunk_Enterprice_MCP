@@ -318,6 +318,7 @@ MCP_TRANSPORT=stdio
 ```
  * Exemplo das configuraçoes do arquivo .env
 ![Configurar as Variáveis de Ambiente-1](imagens/1.png)
+---
 
  * Exemplo 2 das configuraçoes do arquivo .env
 ![Configuração do Wazuh Indexer opensearch.yml](/imagens/2.png)
@@ -367,8 +368,7 @@ Adicione ao arquivo de configuração:
 ```
 * imagem de Exemplo de configuração mcp_config.json para o Antigravity IDE
 
-[Configuração mcp_config.json na Antigravity IDE](/imagens/3.png)
-
+![Configuração mcp_config.json na Antigravity IDE](imagens/3.png)
   
 ### Cursor (`.cursor/mcp.json`)
 
