@@ -317,10 +317,14 @@ MCP_READ_ONLY=false
 MCP_TRANSPORT=stdio
 ```
 * crie o arquivo .env
+
     ![Criando o arquivo .env](imagens/1.png)
 
 * Exemplo 2 das configurações do arquivo .env
-    ![Configurações do .env](/imagens/2.png)
+
+    ![Configurações do .env](imagens/2.png)
+
+---
 
  
 ---
